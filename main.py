@@ -1,13 +1,14 @@
 import openai
 import os
 import random
+import time
 
 # Set your OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-def get_suspect_statement():
-    """Generate a suspect's statement using OpenAI GPT."""
-    prompt = "Create a suspect's statement for a crime scene with at least one logical loophole."
+def get_suspect_statement(difficulty):
+    """Generate a suspect's statement using OpenAI GPT based on difficulty level."""
+    prompt = f"Create a {difficulty}-level suspect's statement for a crime scene with at least one logical loophole."
     response = openai.Completion.create(
         model="text-davinci-004",
         prompt=prompt,
@@ -49,17 +50,37 @@ def get_hint(statement):
     hint = response.choices[0].text.strip()
     return hint
 
+def timed_input(prompt, timeout):
+    """Function to handle timed input from the player."""
+    print(prompt)
+    start_time = time.time()
+    input_value = ""
+    while time.time() - start_time < timeout:
+        if input_value:
+            break
+        input_value = input()
+    if not input_value:
+        print("\nTime's up!")
+    return input_value
+
 def start_game():
     print("Welcome to the Enhanced 'Suspect Loopholes' Game!")
     print("You are a detective, and your task is to find contradictions in the suspects' statements.")
-    print("Let's begin...\n")
+    
+    # Select difficulty level
+    difficulty = input("Choose difficulty level (easy/medium/hard): ").lower()
+    while difficulty not in ["easy", "medium", "hard"]:
+        difficulty = input("Invalid choice. Please choose difficulty level (easy/medium/hard): ").lower()
 
+    print("Let's begin...\n")
+    
     score = 0
     rounds = 3  # Number of suspects/statements to analyze
+    timer = {"easy": 60, "medium": 45, "hard": 30}[difficulty]  # Set timer based on difficulty
 
     for round_num in range(1, rounds + 1):
         print(f"Round {round_num}:\n")
-        statement = get_suspect_statement()
+        statement = get_suspect_statement(difficulty)
         print(f"Suspect's Statement: {statement}\n")
 
         options = generate_options(statement)
@@ -67,12 +88,12 @@ def start_game():
         for i, option in enumerate(options, 1):
             print(f"{i}. {option}")
 
-        choice = input("\nChoose the number of the loophole you want to point out (or type 'hint' for a hint): ")
+        choice = timed_input(f"\nChoose the number of the loophole you want to point out (or type 'hint' for a hint). You have {timer} seconds: ", timer)
 
         if choice.lower() == "hint":
             hint = get_hint(statement)
             print(f"\nHint: {hint}\n")
-            choice = input("\nNow, choose the number of the loophole you want to point out: ")
+            choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
 
         if choice.isdigit() and 1 <= int(choice) <= len(options):
             feedback = get_feedback(statement, options[int(choice) - 1])
@@ -83,16 +104,36 @@ def start_game():
             else:
                 print("Incorrect choice. No points awarded.\n")
         else:
-            print("\nInvalid choice. Please select a valid option number.\n")
+            print("\nInvalid choice or time ran out. Please select a valid option number.\n")
         
         print(f"Current Score: {score}\n")
 
     print(f"Game Over! Your final score is: {score}/{rounds}")
+    save_score(score)
+    display_leaderboard()
     replay_choice = input("Would you like to play again? (yes/no): ")
     if replay_choice.lower() == "yes":
         start_game()
     else:
         print("Thank you for playing! Goodbye!")
+
+def save_score(score):
+    """Save the player's score to the leaderboard."""
+    with open("leaderboard.txt", "a") as f:
+        player_name = input("Enter your name for the leaderboard: ")
+        f.write(f"{player_name}: {score}\n")
+
+def display_leaderboard():
+    """Display the leaderboard with top scores."""
+    print("\nLeaderboard:")
+    try:
+        with open("leaderboard.txt", "r") as f:
+            scores = [line.strip() for line in f.readlines()]
+            scores.sort(key=lambda x: int(x.split(": ")[1]), reverse=True)
+            for rank, score in enumerate(scores[:5], 1):
+                print(f"{rank}. {score}")
+    except FileNotFoundError:
+        print("No leaderboard data found.")
 
 # Start the game
 start_game()
