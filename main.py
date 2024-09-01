@@ -50,6 +50,28 @@ def get_hint(statement):
     hint = response.choices[0].text.strip()
     return hint
 
+def generate_case_story(difficulty):
+    """Generate a background story for the case based on the difficulty level."""
+    prompt = f"Create a background story for a detective game case at {difficulty} difficulty. Include details about the crime scene, suspects, and potential motives."
+    response = openai.Completion.create(
+        model="text-davinci-004",
+        prompt=prompt,
+        max_tokens=200
+    )
+    story = response.choices[0].text.strip()
+    return story
+
+def analyze_clue(statement):
+    """Allow players to analyze clues and gather more information."""
+    prompt = f"Analyze this statement for hidden clues or evidence: '{statement}'. Provide insight that might help uncover the truth."
+    response = openai.Completion.create(
+        model="text-davinci-004",
+        prompt=prompt,
+        max_tokens=100
+    )
+    clue_analysis = response.choices[0].text.strip()
+    return clue_analysis
+
 def timed_input(prompt, timeout):
     """Function to handle timed input from the player."""
     print(prompt)
@@ -64,15 +86,18 @@ def timed_input(prompt, timeout):
     return input_value
 
 def start_game():
-    print("Welcome to the Enhanced 'Suspect Loopholes' Game!")
-    print("You are a detective, and your task is to find contradictions in the suspects' statements.")
+    print("Welcome to the Advanced 'Suspect Loopholes' Game!")
+    print("You are a detective, and your task is to solve the cases by finding contradictions in the suspects' statements.")
     
     # Select difficulty level
     difficulty = input("Choose difficulty level (easy/medium/hard): ").lower()
     while difficulty not in ["easy", "medium", "hard"]:
         difficulty = input("Invalid choice. Please choose difficulty level (easy/medium/hard): ").lower()
 
-    print("Let's begin...\n")
+    # Generate a case story
+    story = generate_case_story(difficulty)
+    print(f"\nCase Background:\n{story}\n")
+    print("Let's begin solving the case...\n")
     
     score = 0
     rounds = 3  # Number of suspects/statements to analyze
@@ -88,11 +113,16 @@ def start_game():
         for i, option in enumerate(options, 1):
             print(f"{i}. {option}")
 
-        choice = timed_input(f"\nChoose the number of the loophole you want to point out (or type 'hint' for a hint). You have {timer} seconds: ", timer)
+        choice = timed_input(f"\nChoose the number of the loophole you want to point out (or type 'hint' for a hint, 'analyze' to analyze clues). You have {timer} seconds: ", timer)
 
         if choice.lower() == "hint":
             hint = get_hint(statement)
             print(f"\nHint: {hint}\n")
+            choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
+
+        elif choice.lower() == "analyze":
+            analysis = analyze_clue(statement)
+            print(f"\nClue Analysis: {analysis}\n")
             choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
 
         if choice.isdigit() and 1 <= int(choice) <= len(options):
