@@ -85,10 +85,23 @@ def timed_input(prompt, timeout):
         print("\nTime's up!")
     return input_value
 
-def start_game():
-    print("Welcome to the Advanced 'Suspect Loopholes' Game!")
-    print("You are a detective, and your task is to solve the cases by finding contradictions in the suspects' statements.")
-    
+def manage_inventory(inventory, item):
+    """Manage player's inventory by adding new evidence or clues."""
+    inventory.append(item)
+    print(f"\nNew evidence added to inventory: {item}")
+    print(f"Current Inventory: {inventory}")
+
+def start_multiplayer_game():
+    print("Welcome to the Advanced Multiplayer 'Suspect Loopholes' Game!")
+    print("You are detectives competing to solve cases by finding contradictions in suspects' statements.")
+
+    # Select number of players
+    player_count = int(input("Enter the number of players (2-4): "))
+    while player_count < 2 or player_count > 4:
+        player_count = int(input("Invalid number. Please enter a number between 2 and 4: "))
+
+    players = [{"name": input(f"Enter player {i + 1}'s name: "), "score": 0, "inventory": []} for i in range(player_count)]
+
     # Select difficulty level
     difficulty = input("Choose difficulty level (easy/medium/hard): ").lower()
     while difficulty not in ["easy", "medium", "hard"]:
@@ -98,52 +111,60 @@ def start_game():
     story = generate_case_story(difficulty)
     print(f"\nCase Background:\n{story}\n")
     print("Let's begin solving the case...\n")
-    
-    score = 0
+
     rounds = 3  # Number of suspects/statements to analyze
     timer = {"easy": 60, "medium": 45, "hard": 30}[difficulty]  # Set timer based on difficulty
 
     for round_num in range(1, rounds + 1):
         print(f"Round {round_num}:\n")
-        statement = get_suspect_statement(difficulty)
-        print(f"Suspect's Statement: {statement}\n")
+        for player in players:
+            print(f"{player['name']}'s turn:\n")
+            statement = get_suspect_statement(difficulty)
+            print(f"Suspect's Statement: {statement}\n")
 
-        options = generate_options(statement)
-        print("Options:")
-        for i, option in enumerate(options, 1):
-            print(f"{i}. {option}")
+            options = generate_options(statement)
+            print("Options:")
+            for i, option in enumerate(options, 1):
+                print(f"{i}. {option}")
 
-        choice = timed_input(f"\nChoose the number of the loophole you want to point out (or type 'hint' for a hint, 'analyze' to analyze clues). You have {timer} seconds: ", timer)
+            choice = timed_input(f"\nChoose the number of the loophole you want to point out (or type 'hint' for a hint, 'analyze' to analyze clues). You have {timer} seconds: ", timer)
 
-        if choice.lower() == "hint":
-            hint = get_hint(statement)
-            print(f"\nHint: {hint}\n")
-            choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
+            if choice.lower() == "hint":
+                hint = get_hint(statement)
+                print(f"\nHint: {hint}\n")
+                choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
 
-        elif choice.lower() == "analyze":
-            analysis = analyze_clue(statement)
-            print(f"\nClue Analysis: {analysis}\n")
-            choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
+            elif choice.lower() == "analyze":
+                analysis = analyze_clue(statement)
+                print(f"\nClue Analysis: {analysis}\n")
+                manage_inventory(player['inventory'], analysis)
+                choice = timed_input(f"\nNow, choose the number of the loophole you want to point out. You have {timer} seconds: ", timer)
 
-        if choice.isdigit() and 1 <= int(choice) <= len(options):
-            feedback = get_feedback(statement, options[int(choice) - 1])
-            print(f"\nFeedback: {feedback}\n")
-            if "Correct" in feedback:
-                score += 1
-                print("Well done! Your score increases by 1.\n")
+            if choice.isdigit() and 1 <= int(choice) <= len(options):
+                feedback = get_feedback(statement, options[int(choice) - 1])
+                print(f"\nFeedback: {feedback}\n")
+                if "Correct" in feedback:
+                    player['score'] += 1
+                    print(f"Well done, {player['name']}! Your score increases by 1.\n")
+                else:
+                    print("Incorrect choice. No points awarded.\n")
             else:
-                print("Incorrect choice. No points awarded.\n")
-        else:
-            print("\nInvalid choice or time ran out. Please select a valid option number.\n")
-        
-        print(f"Current Score: {score}\n")
+                print("\nInvalid choice or time ran out. Please select a valid option number.\n")
 
-    print(f"Game Over! Your final score is: {score}/{rounds}")
-    save_score(score)
+            print(f"Current Score for {player['name']}: {player['score']}\n")
+    
+    # Determine winner(s)
+    max_score = max(player["score"] for player in players)
+    winners = [player["name"] for player in players if player["score"] == max_score]
+    if len(winners) > 1:
+        print(f"It's a tie! The winners are: {', '.join(winners)} with a score of {max_score}.")
+    else:
+        print(f"The winner is {winners[0]} with a score of {max_score}!")
+
     display_leaderboard()
     replay_choice = input("Would you like to play again? (yes/no): ")
     if replay_choice.lower() == "yes":
-        start_game()
+        start_multiplayer_game()
     else:
         print("Thank you for playing! Goodbye!")
 
@@ -165,5 +186,5 @@ def display_leaderboard():
     except FileNotFoundError:
         print("No leaderboard data found.")
 
-# Start the game
-start_game()
+# Start the multiplayer game
+start_multiplayer_game()
