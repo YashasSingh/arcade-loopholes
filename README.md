@@ -1,5 +1,6 @@
 
 # Advanced Multiplayer Dynamic Suspect Loopholes Game
+![image](https://github.com/user-attachments/assets/b945d86a-cf22-4089-b10a-aedfa6f5f9c4)
 
 Welcome to the **Advanced Multiplayer Dynamic Suspect Loopholes Game**! This is an interactive text-based detective game where players compete to solve cases by identifying logical loopholes in suspects' statements. 
 
